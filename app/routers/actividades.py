@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Response
 from app.dependencies import repo_actividades, repo_contratos
 from app.errors import ReglaNegocioError
 from app.models import ActividadObra
+from data.db.operations_db import create_actividad_obra_db
 
 router = APIRouter(prefix="/actividades", tags=["Actividades"])
 
@@ -22,8 +23,8 @@ def _validar_contrato_y_valor(act: ActividadObra, contratos, actividades, exclui
 
 @router.post("", response_model=ActividadObra, status_code=201)
 def crear_actividad(act: ActividadObra, repo=Depends(repo_actividades), contratos=Depends(repo_contratos)):
-    _validar_contrato_y_valor(act, contratos, repo)
-    return repo.crear(act)
+    return create_actividad_obra_db((new_actividad_obra)
+
 
 
 @router.get("", response_model=list[ActividadObra])

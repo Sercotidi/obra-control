@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import Optional
-
+from sqlmodel import Field, SQLModel
 from pydantic import BaseModel, Field, model_validator
 
 
-class ActividadObra(BaseModel):
+class ActividadObra(SQLModel):
     id: Optional[int] = Field(default=None, ge=1)
     contrato_id: int = Field(ge=1)
     nombre_actividad: str = Field(min_length=2, max_length=100)
