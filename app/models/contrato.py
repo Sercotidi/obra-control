@@ -16,6 +16,7 @@ class ContratoObra(BaseModel):
     fecha_fin: date
     valor_contrato: Decimal = Field(gt=0, max_digits=16, decimal_places=2)
     estado: EstadoContrato = EstadoContrato.BORRADOR
+    activo: bool = True  # borrado lógico: False = inactivo (histórico)
 
     @model_validator(mode="after")
     def _fechas_coherentes(self):
