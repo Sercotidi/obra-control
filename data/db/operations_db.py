@@ -5,7 +5,7 @@ from app.models import ActividadObra, contrato
 
 
 def create_actividad_obra_db(new_actividad_obra:ActividadBase):
-    session: Session(engine)
+    session= Session(engine)
     actividad = ActividadObra.model_validate(new_actividad_obra)
     session.add(actividad)
     session.commit()
@@ -13,3 +13,11 @@ def create_actividad_obra_db(new_actividad_obra:ActividadBase):
     session.close()
 
     return actividad
+
+def show_actividad_obra(actividad_obra: ActividadObra):
+ session= Session(engine)
+ actividad_obra = session.select(ActividadObra)
+ session.close()
+ return actividad_obra
+
+
