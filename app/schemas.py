@@ -1,4 +1,4 @@
-"""Modelos de entrada o salida de la API (no se guardan tal cual en el CSV)."""
+"""Modelos de entrada/salida de la API (no se guardan tal cual en CSV)."""
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
@@ -12,6 +12,7 @@ class DetalleEntrada(BaseModel):
 
 
 class CorteCrear(CorteObra):
+    """Corte + las cantidades que se cobran por actividad."""
     detalles: list[DetalleEntrada] = Field(min_length=1)
 
 
