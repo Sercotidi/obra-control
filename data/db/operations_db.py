@@ -1,23 +1,26 @@
-from models.ActividadObra import id contrato_obra nombre_actividad unidad_medida
-from sqlmodel import SQLModel, Session, select
-from actividad import engine
-from app.models import ActividadObra, contrato
+from sqlmodel import Session, select
+
+from app.models import ActividadObra
+from app.models.actividad_db import ActividadObraDB
+from data.db.control_de_obra import create_db_tables, engine
 
 
-def create_actividad_obra_db(new_actividad_obra:ActividadBase):
-    session= Session(engine)
-    actividad = ActividadObra.model_validate(new_actividad_obra)
-    session.add(actividad)
-    session.commit()
-    session.refresh(actividad)
-    session.close()
+def create_actividad_obra_db(new_actividad_obra: ActividadObra, db_engine=engine):
+    """Guarda una actividad en SQLite. La validación la hace ActividadObra (Pydantic)."""
+    create_db_tables() if db_engine is engine else None
+    datos = new_actividad_obra.model_dump(exclude={"id"})
+    with Session(db_engine) as session:
+        actividad = ActividadObraDB(**datos)
+        session.add(actividad)
+        session.commit()
+        session.refresh(actividad)
+        return actividad
 
-    return actividad
 
-def show_actividad_obra(actividad_obra: ActividadObra):
- session= Session(engine)
- actividad_obra = session.select(ActividadObra)
- session.close()
- return actividad_obra
+def show_actividad_obra(db_engine=engine):
+    """Lista todas las actividades guardadas en SQLite."""
+    create_db_tables() if db_engine is engine else None
+    with Session(db_engine) as session:
+        return list(session.exec(select(ActividadObraDB)).all())
 
 
