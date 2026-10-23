@@ -37,3 +37,4 @@ class DetalleCorteObra(BaseModel):
     @property
     def valor(self) -> Decimal:
         return self.cantidad * self.precio_unitario
+
