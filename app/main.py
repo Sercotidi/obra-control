@@ -5,7 +5,7 @@ from app.errors import ReglaNegocioError
 from app.repositories.errors import DatosCorruptos, RegistroNoEncontrado
 from app.routers import actividades, contratos, cortes
 
-app = FastAPI(title="ObraControl", description="Avances, cortes y cobros de obra (CSV)", version="0.1.0")
+app = FastAPI(title="ObraControl", description="Avances, cortes y cobros de obra (SQLite)", version="0.1.0")
 app.include_router(contratos.router)
 app.include_router(actividades.router)
 app.include_router(cortes.router)
@@ -23,9 +23,10 @@ async def regla_negocio(request: Request, exc: ReglaNegocioError):
 
 @app.exception_handler(DatosCorruptos)
 async def datos_corruptos(request: Request, exc: DatosCorruptos):
-    return JSONResponse(status_code=500, content={"detail": "Error leyendo los archivos CSV"})
+    return JSONResponse(status_code=500, content={"detail": "Error leyendo los datos"})
 
 
 @app.get("/", tags=["Inicio"])
 def inicio():
     return {"proyecto": "ObraControl", "docs": "/docs"}
+
