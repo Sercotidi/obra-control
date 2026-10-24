@@ -28,6 +28,12 @@ def listar_actividades(contrato_id: Optional[int] = None, nombre: Optional[str] 
     return res
 
 
+@router.get("/historico", response_model=list[ActividadObra])
+def historico_actividades(repo=Depends(repo_actividades)):
+    """Registros eliminados (activo=False)."""
+    return [x for x in repo.listar() if not x.activo]
+
+
 @router.get("/{actividad_id}", response_model=ActividadObra)
 def obtener_actividad(actividad_id: int, repo=Depends(repo_actividades)):
     return repo.obtener(actividad_id)

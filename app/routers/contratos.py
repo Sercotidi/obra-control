@@ -32,6 +32,12 @@ def listar_contratos(estado: Optional[EstadoContrato] = None, contratista: Optio
     return res
 
 
+@router.get("/historico", response_model=list[ContratoObra])
+def historico_contratos(repo=Depends(repo_contratos)):
+    """Registros eliminados (activo=False)."""
+    return [x for x in repo.listar() if not x.activo]
+
+
 @router.get("/numero/{numero_contrato}", response_model=ContratoObra)
 def buscar_por_numero(numero_contrato: str, repo=Depends(repo_contratos)):
     """Búsqueda por un atributo distinto al ID."""

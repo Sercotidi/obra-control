@@ -37,6 +37,12 @@ def listar_cortes(contrato_id: Optional[int] = None, estado: Optional[EstadoCort
     return res
 
 
+@router.get("/historico", response_model=list[CorteObra])
+def historico_cortes(repo=Depends(repo_cortes)):
+    """Registros eliminados (activo=False)."""
+    return [x for x in repo.listar() if not x.activo]
+
+
 @router.get("/{corte_id}", response_model=CorteDetallado)
 def obtener_corte(corte_id: int, repo=Depends(repo_cortes), svc=Depends(servicio_obra)):
     return _detallado(repo.obtener(corte_id), svc)
