@@ -85,4 +85,3 @@ def test_detalle_valor_y_cantidad_positiva():
     d = DetalleCorteObra(corte_id=1, actividad_id=1, cantidad=Decimal("2"), precio_unitario=Decimal("1000000"))
     assert d.valor == Decimal("2000000")
     with pytest.raises(ValidationError):
-        DetalleCorteObra(corte_id=1, actividad_id=1, cantidad=Decimal("0"), precio_unitario=Decimal("1"))

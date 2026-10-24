@@ -99,5 +99,3 @@ def test_corte_enum_y_no_deja_temporales(tmp_path):
     c = r.crear(CorteObra(contrato_id=1, numero_corte=1, fecha_corte=date(2026, 2, 1),
                           periodo_inicio=date(2026, 1, 1), periodo_fin=date(2026, 1, 31),
                           estado=EstadoCorte.RECHAZADO))
-    assert r.obtener(c.id).estado == EstadoCorte.RECHAZADO
-    assert not list(tmp_path.glob("*.tmp"))

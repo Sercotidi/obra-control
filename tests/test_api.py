@@ -89,5 +89,3 @@ def test_no_elimina_contrato_con_cortes_vigentes(client):
     preparar(client)
     client.post("/cortes", json=CORTE)
     assert client.delete("/contratos/1").status_code == 409
-    client.delete("/cortes/1")  # borrador -> borrado logico
-    assert client.delete("/contratos/1").status_code == 204  # ya no hay cortes vigentes

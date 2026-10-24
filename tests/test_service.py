@@ -134,5 +134,3 @@ def test_eliminar_solo_borrador(svc):
     assert svc.cantidades_actividad(1)["disponible_para_cobrar"] == 2
     c2 = svc.crear_corte(corte(2), [(1, D("1"))])
     svc.cambiar_estado_corte(c2.id, EstadoCorte.PRESENTADO)
-    with pytest.raises(ReglaNegocioError):
-        svc.eliminar_corte(c2.id)

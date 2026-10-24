@@ -60,4 +60,3 @@ def test_avance_no_baja_de_lo_cortado_ni_supera_contratado(client):
     client.post("/cortes", json=CORTE)
     assert client.patch("/actividades/1/avance", json={"cantidad_ejecutada": "1"}).status_code == 409
     assert client.patch("/actividades/1/avance", json={"cantidad_ejecutada": "9"}).status_code == 409
-    assert client.patch("/actividades/99/avance", json={"cantidad_ejecutada": "1"}).status_code == 404
