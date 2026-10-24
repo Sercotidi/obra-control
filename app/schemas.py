@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from app.models import CorteObra, DetalleCorteObra
+from app.models import CorteObra, DetalleCorteObra, FacturaObra
 
 
 class DetalleEntrada(BaseModel):
@@ -41,3 +41,12 @@ class ResumenContrato(BaseModel):
     valor_aprobado: Decimal
     valor_disponible_para_cobrar: Decimal
     valor_pendiente_ejecutar: Decimal
+    valor_facturado: Decimal
+    valor_pagado: Decimal
+    saldo_pendiente_recaudo: Decimal  # facturado - pagado
+    valor_aprobado_sin_facturar: Decimal  # aprobado - facturado
+
+
+class FacturaDetallada(FacturaObra):
+    valor_pagado: Decimal
+    saldo: Decimal

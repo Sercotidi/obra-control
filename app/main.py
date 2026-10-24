@@ -3,12 +3,14 @@ from fastapi.responses import JSONResponse
 
 from app.errors import ReglaNegocioError
 from app.repositories.errors import DatosCorruptos, RegistroNoEncontrado
-from app.routers import actividades, contratos, cortes
+from app.routers import actividades, contratos, cortes, facturas, pagos
 
 app = FastAPI(title="ObraControl", description="Avances, cortes y cobros de obra (SQLite)", version="0.1.0")
 app.include_router(contratos.router)
 app.include_router(actividades.router)
 app.include_router(cortes.router)
+app.include_router(facturas.router)
+app.include_router(pagos.router)
 
 
 @app.exception_handler(RegistroNoEncontrado)

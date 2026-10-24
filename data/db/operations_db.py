@@ -24,3 +24,4 @@ def show_actividad_obra(db_engine=engine):
         return list(session.exec(select(ActividadObraDB)).all())
 
 
+
