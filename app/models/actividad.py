@@ -28,3 +28,4 @@ class ActividadObra(BaseModel):
     @property
     def valor_ejecutado(self) -> Decimal:
         return self.cantidad_ejecutada * self.precio_unitario
+

@@ -1,3 +1,4 @@
+"""Tabla SQL de ContratoObra (SQLModel)."""
 from datetime import date
 from decimal import Decimal
 from typing import Optional
