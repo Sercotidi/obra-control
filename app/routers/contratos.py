@@ -1,73 +1,83 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
 
-from app.dependencies import repo_contratos, servicio_obra
-from app.errors import ReglaNegocioError
-from app.models import ContratoObra, EstadoContrato
-from app.repositories.errors import RegistroNoEncontrado
-from app.schemas import ResumenContrato
+from app.database import get_session, obtener_o_404
+from app.models import Contrato, ContratoBase, Corte
 
 router = APIRouter(prefix="/contratos", tags=["Contratos"])
 
 
-@router.post("", response_model=ContratoObra, status_code=201)
-def crear_contrato(contrato: ContratoObra, repo=Depends(repo_contratos)):
-    if any(c.numero_contrato == contrato.numero_contrato for c in repo.listar()):
-        raise ReglaNegocioError(f"Ya existe el contrato {contrato.numero_contrato}")
-    return repo.crear(contrato)
+def revisar_datos(datos: ContratoBase, session: Session, id_actual: Optional[int] = None):
+    """Reglas al crear o editar un contrato."""
+    if datos.fecha_fin < datos.fecha_inicio:
+        raise HTTPException(status_code=422, detail="fecha_fin no puede ser anterior a fecha_inicio")
+    repetido = session.exec(select(Contrato).where(Contrato.numero_contrato == datos.numero_contrato)).all()
+    if any(c.id != id_actual for c in repetido):
+        raise HTTPException(status_code=409, detail=f"Ya existe el contrato {datos.numero_contrato}")
 
 
-@router.get("", response_model=list[ContratoObra])
-def listar_contratos(estado: Optional[EstadoContrato] = None, contratista: Optional[str] = None,
-                     activo: Optional[bool] = None, repo=Depends(repo_contratos)):
-    """Filtros: estado, contratista (texto parcial) y activo."""
-    res = repo.listar()
-    if estado:
-        res = [c for c in res if c.estado == estado]
-    if contratista:
-        res = [c for c in res if contratista.lower() in c.nombre_contratista.lower()]
+# CREATE
+@router.post("", response_model=Contrato, status_code=201)
+def crear_contrato(datos: ContratoBase, session: Session = Depends(get_session)):
+    revisar_datos(datos, session)
+    contrato = Contrato(**datos.model_dump())
+    session.add(contrato)
+    session.commit()
+    session.refresh(contrato)
+    return contrato
+
+
+# READ (lista) + FILTROS: por nombre del contratista y por activo
+@router.get("", response_model=list[Contrato])
+def listar_contratos(nombre_contratista: Optional[str] = None, activo: Optional[bool] = None,
+                     session: Session = Depends(get_session)):
+    consulta = select(Contrato)
+    if nombre_contratista:
+        consulta = consulta.where(Contrato.nombre_contratista.contains(nombre_contratista))
     if activo is not None:
-        res = [c for c in res if c.activo == activo]
-    return res
+        consulta = consulta.where(Contrato.activo == activo)
+    return session.exec(consulta).all()
 
 
-@router.get("/historico", response_model=list[ContratoObra])
-def historico_contratos(repo=Depends(repo_contratos)):
-    """Registros eliminados (activo=False)."""
-    return [x for x in repo.listar() if not x.activo]
+# BÚSQUEDA por un atributo que NO es el ID
+@router.get("/numero/{numero_contrato}", response_model=Contrato)
+def buscar_por_numero(numero_contrato: str, session: Session = Depends(get_session)):
+    contrato = session.exec(select(Contrato).where(Contrato.numero_contrato == numero_contrato)).first()
+    if contrato is None:
+        raise HTTPException(status_code=404, detail=f"No existe el contrato número {numero_contrato}")
+    return contrato
 
 
-@router.get("/numero/{numero_contrato}", response_model=ContratoObra)
-def buscar_por_numero(numero_contrato: str, repo=Depends(repo_contratos)):
-    """Búsqueda por un atributo distinto al ID."""
-    for c in repo.listar():
-        if c.numero_contrato == numero_contrato:
-            return c
-    raise RegistroNoEncontrado(f"No existe el contrato número {numero_contrato}")
+# READ (uno por ID)
+@router.get("/{contrato_id}", response_model=Contrato)
+def obtener_contrato(contrato_id: int, session: Session = Depends(get_session)):
+    return obtener_o_404(session, Contrato, contrato_id)
 
 
-@router.get("/{contrato_id}", response_model=ContratoObra)
-def obtener_contrato(contrato_id: int, repo=Depends(repo_contratos)):
-    return repo.obtener(contrato_id)
+# UPDATE
+@router.put("/{contrato_id}", response_model=Contrato)
+def actualizar_contrato(contrato_id: int, datos: ContratoBase, session: Session = Depends(get_session)):
+    contrato = obtener_o_404(session, Contrato, contrato_id)
+    revisar_datos(datos, session, id_actual=contrato_id)
+    for campo, valor in datos.model_dump().items():
+        setattr(contrato, campo, valor)
+    session.add(contrato)
+    session.commit()
+    session.refresh(contrato)
+    return contrato
 
 
-@router.get("/{contrato_id}/resumen", response_model=ResumenContrato)
-def resumen_contrato(contrato_id: int, svc=Depends(servicio_obra)):
-    """Valores contratado, ejecutado, en cortes, aprobado, disponible y pendiente."""
-    return svc.resumen_contrato(contrato_id)
-
-
-@router.put("/{contrato_id}", response_model=ContratoObra)
-def actualizar_contrato(contrato_id: int, contrato: ContratoObra, repo=Depends(repo_contratos)):
-    repo.obtener(contrato_id)
-    if any(c.numero_contrato == contrato.numero_contrato and c.id != contrato_id for c in repo.listar()):
-        raise ReglaNegocioError(f"Ya existe el contrato {contrato.numero_contrato}")
-    return repo.actualizar(contrato_id, contrato)
-
-
-@router.delete("/{contrato_id}", status_code=204)
-def eliminar_contrato(contrato_id: int, svc=Depends(servicio_obra)):
-    """Borrado lógico (activo=False). No se permite si tiene cortes vigentes."""
-    svc.eliminar_contrato(contrato_id)
-    return Response(status_code=204)
+# DELETE lógico: no se borra, pasa a activo=False (queda en el histórico)
+@router.delete("/{contrato_id}")
+def eliminar_contrato(contrato_id: int, session: Session = Depends(get_session)):
+    contrato = obtener_o_404(session, Contrato, contrato_id)
+    # Regla de eliminación: no se elimina un contrato que tenga cortes activos
+    cortes = session.exec(select(Corte).where(Corte.contrato_id == contrato_id, Corte.activo == True)).all()  # noqa: E712
+    if cortes:
+        raise HTTPException(status_code=409, detail="No se puede eliminar: el contrato tiene cortes activos")
+    contrato.activo = False
+    session.add(contrato)
+    session.commit()
+    return {"mensaje": f"Contrato {contrato_id} eliminado (queda en el histórico)"}

@@ -1,34 +1,26 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
-from app.errors import ReglaNegocioError
-from app.repositories.errors import DatosCorruptos, RegistroNoEncontrado
-from app.routers import actividades, contratos, cortes, facturas, pagos
+from fastapi import FastAPI
 
-app = FastAPI(title="ObraControl", description="Avances, cortes y cobros de obra (SQLite)", version="0.1.0")
+from app.database import crear_tablas
+from app.routers import actividades, contratos, cortes, vista
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    crear_tablas()  # al arrancar el servidor, se crea control.db con sus tablas
+    yield
+
+
+app = FastAPI(title="ObraControl", description="Contratos, actividades y cortes de obra", lifespan=lifespan)
+
 app.include_router(contratos.router)
 app.include_router(actividades.router)
 app.include_router(cortes.router)
-app.include_router(facturas.router)
-app.include_router(pagos.router)
-
-
-@app.exception_handler(RegistroNoEncontrado)
-async def no_encontrado(request: Request, exc: RegistroNoEncontrado):
-    return JSONResponse(status_code=404, content={"detail": str(exc)})
-
-
-@app.exception_handler(ReglaNegocioError)
-async def regla_negocio(request: Request, exc: ReglaNegocioError):
-    return JSONResponse(status_code=409, content={"detail": str(exc)})
-
-
-@app.exception_handler(DatosCorruptos)
-async def datos_corruptos(request: Request, exc: DatosCorruptos):
-    return JSONResponse(status_code=500, content={"detail": "Error leyendo los datos"})
+app.include_router(vista.router)
 
 
 @app.get("/", tags=["Inicio"])
 def inicio():
-    return {"proyecto": "ObraControl", "docs": "/docs"}
+    return {"proyecto": "ObraControl", "documentacion": "/docs", "ver_base_de_datos": "/base-de-datos"}
 

@@ -1,128 +1,108 @@
-# ObraControl
+# 🏗️ ObraControl
 
-MVP para gestionar avances de obra, cortes y cobros de contratistas (FastAPI + Pydantic + CSV).
+**API para la gestión de contratos de obra, actividades y cortes de cobro.**
 
-Proyecto de la materia Desarrollo de Software Con profesor SIGMOTOA.
+Desarrollada con **FastAPI, SQLModel y SQLite** para la materia de Desarrollo de Software (profesor SIGMOTOA).
 
-## Mapa de endpoints
+---
 
-ObraControl dispone de **35 endpoints** para gestionar contratos, actividades, cortes, facturas y pagos.
+## 🎯 ¿Qué hace?
 
-| Modelo | Cantidad |
-|---|---:|
-| Contratos | 8 |
-| Actividades | 8 |
-| Cortes | 7 |
-| Facturas | 7 |
-| Pagos | 5 |
-| **Total** | **35** |
+Permite a una constructora administrar sus contratos con subcontratistas, registrar las actividades ejecutadas y gestionar los cortes de cobro por los trabajos realizados.
 
-**Métodos:** 🟢 GET · 🔵 POST · 🟡 PUT · 🟠 PATCH · 🔴 DELETE
+| 📑 Contratos | 🧱 Actividades | 💰 Cortes |
+|---|---|---|
+| Datos y valores de la obra | Cantidades y precios | Solicitudes de cobro y estados |
 
-**Códigos HTTP:** `200` OK · `201` Creado · `204` Sin contenido · `404` No encontrado · `409` Conflicto de negocio · `422` Datos inválidos.
+## 🚀 Instalación y ejecución
 
-### Contratos (8)
-
-| Método | Ruta | Descripción | Parámetros | Respuestas | Regla |
-|---|---|---|---|---|---|
-| 🔵 POST | `/contratos` | Crear | JSON | 201, 409, 422 | Número único, fechas válidas, valor positivo |
-| 🟢 GET | `/contratos` | Listar | estado, contratista, activo | 200, 422 | Filtros |
-| 🟢 GET | `/contratos/historico` | Históricos | — | 200 | Inactivos |
-| 🟢 GET | `/contratos/numero/{numero_contrato}` | Buscar número | numero_contrato | 200, 404 | Número existente |
-| 🟢 GET | `/contratos/{contrato_id}` | Consultar | ID | 200, 404 | Debe existir |
-| 🟡 PUT | `/contratos/{contrato_id}` | Actualizar | ID, JSON | 200, 404, 409, 422 | Número único |
-| 🔴 DELETE | `/contratos/{contrato_id}` | Eliminar | ID | 204, 404, 409 | Sin cortes vigentes |
-| 🟢 GET | `/contratos/{contrato_id}/resumen` | Resumen financiero | ID | 200, 404 | Calcula valores y saldos |
-
-### Actividades (8)
-
-| Método | Ruta | Descripción | Parámetros | Respuestas | Regla |
-|---|---|---|---|---|---|
-| 🔵 POST | `/actividades` | Crear | JSON | 201, 404, 409, 422 | Contrato activo; no supera su valor |
-| 🟢 GET | `/actividades` | Listar | contrato_id, nombre, activo | 200, 422 | Filtros |
-| 🟢 GET | `/actividades/historico` | Históricos | — | 200 | Inactivas |
-| 🟢 GET | `/actividades/{actividad_id}` | Consultar | ID | 200, 404 | Debe existir |
-| 🟡 PUT | `/actividades/{actividad_id}` | Actualizar | ID, JSON | 200, 404, 409, 422 | Respeta cantidades cortadas |
-| 🔴 DELETE | `/actividades/{actividad_id}` | Eliminar | ID | 204, 404, 409 | Sin avance ejecutado |
-| 🟢 GET | `/actividades/{actividad_id}/cantidades` | Consultar cantidades | ID | 200, 404 | Calcula disponibilidad |
-| 🟠 PATCH | `/actividades/{actividad_id}/avance` | Registrar avance | ID, cantidad_ejecutada | 200, 404, 409, 422 | No supera lo contratado ni baja de lo cortado |
-
-### Cortes (7)
-
-| Método | Ruta | Descripción | Parámetros | Respuestas | Regla |
-|---|---|---|---|---|---|
-| 🔵 POST | `/cortes` | Crear con detalles | JSON | 201, 404, 409, 422 | Solo cantidades ejecutadas no cobradas; número único por contrato |
-| 🟢 GET | `/cortes` | Listar | contrato_id, estado, activo | 200, 422 | Filtros |
-| 🟢 GET | `/cortes/historico` | Históricos | — | 200 | Inactivos |
-| 🟢 GET | `/cortes/{corte_id}` | Consultar detalles y total | ID | 200, 404 | Total calculado |
-| 🟡 PUT | `/cortes/{corte_id}` | Editar | ID, JSON | 200, 404, 409, 422 | Solo borrador |
-| 🔴 DELETE | `/cortes/{corte_id}` | Eliminar | ID | 204, 404, 409 | Solo borrador; libera cantidades |
-| 🟠 PATCH | `/cortes/{corte_id}/estado` | Cambiar estado | ID, nuevo_estado | 200, 404, 409, 422 | Flujo de aprobación válido |
-
-### Facturas (7)
-
-| Método | Ruta | Descripción | Parámetros | Respuestas | Regla |
-|---|---|---|---|---|---|
-| 🔵 POST | `/facturas` | Crear | JSON | 201, 404, 409, 422 | Corte aprobado, número único, valor válido |
-| 🟢 GET | `/facturas` | Listar | contrato_id, corte_id, activo | 200, 422 | Filtros |
-| 🟢 GET | `/facturas/historico` | Históricos | — | 200 | Inactivas |
-| 🟢 GET | `/facturas/numero/{numero_factura}` | Buscar número | numero_factura | 200, 404 | Número existente |
-| 🟢 GET | `/facturas/{factura_id}` | Consultar saldo | ID | 200, 404 | Valor menos pagos activos |
-| 🟡 PUT | `/facturas/{factura_id}` | Actualizar | ID, JSON | 200, 404, 409, 422 | Sin pagos |
-| 🔴 DELETE | `/facturas/{factura_id}` | Eliminar | ID | 204, 404, 409 | Sin pagos |
-
-### Pagos (5)
-
-| Método | Ruta | Descripción | Parámetros | Respuestas | Regla |
-|---|---|---|---|---|---|
-| 🔵 POST | `/pagos` | Registrar pago | JSON | 201, 404, 409, 422 | No supera saldo ni precede fecha de factura |
-| 🟢 GET | `/pagos` | Listar | factura_id, activo | 200, 422 | Filtros |
-| 🟢 GET | `/pagos/{pago_id}` | Consultar | ID | 200, 404 | Debe existir |
-| 🟡 PUT | `/pagos/{pago_id}` | Actualizar | ID, JSON | 200, 404, 409, 422 | Revalida saldo |
-| 🔴 DELETE | `/pagos/{pago_id}` | Eliminar | ID | 204, 404 | Deja de contar como recaudado |
-
-### Ejemplos JSON
-
-**POST `/contratos`**
-
-```json
-{
-  "numero_contrato": "C-001",
-  "nombre_obra": "Campus FUCS",
-  "empresa_cliente": "Cliente SA",
-  "nombre_contratista": "Muros Ltda",
-  "fecha_inicio": "2026-01-01",
-  "fecha_fin": "2026-12-31",
-  "valor_contrato": 5000000,
-  "estado": "activo"
-}
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-**POST `/cortes`**
+### 🔗 Accesos
 
-```json
-{
-  "contrato_id": 1,
-  "numero_corte": 1,
-  "fecha_corte": "2026-03-01",
-  "periodo_inicio": "2026-02-01",
-  "periodo_fin": "2026-02-28",
-  "detalles": [
-    {"actividad_id": 1, "cantidad": 2}
-  ]
-}
+| Recurso | Dirección |
+|---|---|
+| 📘 Documentación y pruebas | http://127.0.0.1:8000/docs |
+| 🗄️ Base de datos visual | http://127.0.0.1:8000/base-de-datos |
+| 🧪 Pruebas automáticas | `python -m pytest -q` |
+
+## 📂 Estructura del proyecto
+
+```text
+ObraControl/
+├── app/
+│   ├── main.py          # Inicio de la API
+│   ├── database.py      # Conexión a SQLite
+│   ├── models.py        # Modelos de datos
+│   └── routers/
+│       ├── contratos.py
+│       ├── actividades.py
+│       ├── cortes.py
+│       └── vista.py
+├── tests/
+│   └── test_api.py      # Pruebas automáticas
+├── requirements.txt
+└── README.md
 ```
 
-**Respuesta resumida — `201 Created`**
+## 🗃️ Modelos de datos
 
-```json
-{
-  "id": 1,
-  "estado": "borrador",
-  "activo": true,
-  "detalles": [
-    {"actividad_id": 1, "cantidad": 2}
-  ],
-  "valor_total": 2000000
-}
-```
+| Modelo | Información principal |
+|---|---|
+| 📑 `contrato` | Obra, cliente, contratista, fechas y valor |
+| 🧱 `actividad` | Unidad, cantidades y precio unitario |
+| 💵 `corte` | Número, fecha, valor, estado y observaciones |
+
+**Relación:** un contrato puede tener múltiples actividades y cortes.
+
+Estados de un corte: `presentado` · `aprobado` · `rechazado`.
+
+## 🔌 Mapa de endpoints
+
+| Método | Ruta | Función |
+|---|---|---|
+| `POST` | `/contratos` | Crear contrato |
+| `GET` | `/contratos` | Listar y filtrar |
+| `GET` | `/contratos/{id}` | Consultar contrato |
+| `PUT` | `/contratos/{id}` | Actualizar contrato |
+| `DELETE` | `/contratos/{id}` | Desactivar contrato |
+| `POST` | `/actividades` | Crear actividad |
+| `GET` | `/actividades` | Listar y filtrar |
+| `GET` | `/actividades/{id}` | Consultar actividad |
+| `PUT` | `/actividades/{id}` | Actualizar actividad |
+| `DELETE` | `/actividades/{id}` | Desactivar actividad |
+| `POST` | `/cortes` | Crear corte |
+| `GET` | `/cortes` | Listar y filtrar |
+| `GET` | `/cortes/{id}` | Consultar corte |
+| `PUT` | `/cortes/{id}` | Actualizar corte |
+| `DELETE` | `/cortes/{id}` | Desactivar corte |
+| `GET` | `/base-de-datos` | Visualizar las tablas |
+
+*Los contratos también permiten buscar por número mediante `/contratos/numero/{numero_contrato}`.*
+
+## ⚙️ Reglas de negocio
+
+- 📚 **Histórico:** los registros se desactivan sin borrar su historial.
+- 🔒 **Protección:** no se eliminan contratos con cortes activos ni actividades con avance ejecutado.
+- ✅ **Cortes aprobados:** no se pueden modificar ni eliminar.
+- 🔢 **Validación:** no se repiten números de contrato ni números de corte dentro del mismo contrato.
+- 📏 **Cantidades:** lo ejecutado no puede superar lo contratado.
+- 💵 **Valores:** un corte no puede superar el valor del contrato.
+- 🔗 **Integridad:** actividades y cortes requieren contratos existentes y activos.
+
+## ⚠️ Manejo de errores
+
+| Código | Significado |
+|---|---|
+| `404` | Registro no encontrado |
+| `409` | Conflicto con una regla de negocio |
+| `422` | Datos inválidos o inconsistentes |
+
+La API responde con mensajes de error controlados para facilitar la identificación de problemas.
+
+---
+
+**🛠️ Tecnologías:** Python · FastAPI · SQLModel · SQLite · Pytest
